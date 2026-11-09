@@ -41,7 +41,7 @@ Pass `data` as a JSON string containing:
 
 The checker validates references against the supplied source records, checks declared quotations as exact substrings, and appends citations itself. It does not judge whether a claim is true or supported. Passing invented or altered source records defeats the check: never do so.
 
-If the result contains `answer`, use that answer unchanged as the final response. Do not rewrite its filenames or add passage IDs. If it returns an error, do not claim verification passed. Return only the supported answer you can substantiate, explaining any citation verification limitation. Do not enter a retry loop.
+The tool returns a JSON string containing `answer` and the scope of the checks. If that result contains `answer`, use that answer unchanged as the final response. Do not rewrite its filenames or add passage IDs. If it returns an error, do not claim verification passed. Return only the supported answer you can substantiate, explaining any citation verification limitation. Do not enter a retry loop.
 
 For tasks without document citations, or when run_js is unavailable, complete the review without this checker. Never claim code validation ran if it did not.
 

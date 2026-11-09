@@ -5,7 +5,8 @@ const vm = require('node:vm');
 const html = fs.readFileSync(require('node:path').join(__dirname, '../check-and-verify/scripts/index.html'), 'utf8');
 const context = {window:{}};
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
-const run = async x => JSON.parse(await context.window.ai_edge_gallery_get_result(typeof x === 'string' ? x : JSON.stringify(x)));
+const rawRun = async x => JSON.parse(await context.window.ai_edge_gallery_get_result(typeof x === 'string' ? x : JSON.stringify(x)));
+const run = async x => { const r = await rawRun(x); if (typeof r.result === 'string') r.result = JSON.parse(r.result); return r; };
 const fixture = () => ({sources:[{id:'S1',filename:'1706.03762.pdf',page:2,text:'Self-attention relates positions.'}],paragraphs:[{text:'The source says “Self-attention relates positions.”',citations:['S1'],quotes:[{source_id:'S1',text:'Self-attention relates positions.'}]}]});
 test('preserves filename and page exactly', async()=>assert.equal((await run(fixture())).result.answer,'The source says “Self-attention relates positions.” (1706.03762.pdf, page 2)'));
 test('rejects unknown citation', async()=>{const x=fixture();x.paragraphs[0].citations=['S2'];assert.ok((await run(x)).error);});
@@ -19,3 +20,5 @@ test('handles malformed JSON', async()=>assert.ok((await run('{')).error));
 test('rejects empty answers', async()=>assert.ok((await run({sources:[],paragraphs:[]})).error));
 test('does not execute source text', async()=>{const x=fixture();x.sources[0].text='<script>throw Error("executed")</script>';x.paragraphs[0].quotes=[];assert.ok((await run(x)).result);});
 test('does not claim semantic verification', async()=>assert.match((await run(fixture())).result.scope,/meaning.*not validated/));
+
+test('Edge Gallery result is a string', async()=>{const r=await rawRun(fixture());assert.equal(typeof r.result,'string');assert.equal(typeof JSON.parse(r.result).answer,'string');});

@@ -30,7 +30,7 @@ window.ai_edge_gallery_get_result = async function(data) {
       });
       return p.text + (citations.length ? ' ' + citations.join(' ') : '');
     }).join('\n\n');
-    return JSON.stringify({result: {answer, scope: 'Citation records and declared quotations only; meaning, source authenticity and undeclared quotations are not validated.'}});
+    return JSON.stringify({result: JSON.stringify({answer, scope: 'Citation records and declared quotations only; meaning, source authenticity and undeclared quotations are not validated.'})});
   } catch (e) {
     return JSON.stringify({error: e.message});
   }

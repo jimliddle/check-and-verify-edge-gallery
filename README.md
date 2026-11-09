@@ -89,7 +89,7 @@ Run the tests with Node.js 20 or later:
 node --test tests/checker.test.cjs
 ```
 
-The 12 automated tests run the JavaScript embedded in the skill's HTML file. They cover citation formatting, invalid inputs, quotation mismatches and error handling. They do not run Gemma or Android WebView.
+The 13 automated tests run the JavaScript embedded in the skill's HTML file. They cover citation formatting, invalid inputs, quotation mismatches and error handling. They do not run Gemma or Android WebView.
 
 Phone testing is still needed. Keep the model, system prompt and context settings fixed when comparing answers with and without the skill. Include questions with clear answers, missing information, conflicting evidence and calculations. Check citations against the actual tool results.
 
