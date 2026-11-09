@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Check and Verify</title></head><body>
+<script>
+'use strict';
+window.ai_edge_gallery_get_result = async function(data) {
+  try {
+    if (typeof data !== 'string' || data.length > 60000) throw Error('Input must be a JSON string of at most 60000 characters.');
+    const input = JSON.parse(data);
+    if (!input || !Array.isArray(input.sources) || !Array.isArray(input.paragraphs)) throw Error('sources and paragraphs arrays are required.');
+    if (!input.paragraphs.length || input.paragraphs.length > 20 || input.sources.length > 20) throw Error('Provide 1–20 paragraphs and at most 20 sources.');
+    const sources = new Map();
+    const nonempty = v => typeof v === 'string' && v.trim().length > 0;
+    for (const s of input.sources) {
+      if (!s || !nonempty(s.id) || !nonempty(s.filename) || !nonempty(s.text)) throw Error('Each source needs an id, exact filename and text.');
+      if (sources.has(s.id)) throw Error('Duplicate source ID.');
+      if (s.page !== null && (!Number.isInteger(s.page) || s.page < 1)) throw Error('Source page must be a positive integer or null.');
+      sources.set(s.id, s);
+    }
+    const answer = input.paragraphs.map(p => {
+      if (!p || !nonempty(p.text) || !Array.isArray(p.citations) || !Array.isArray(p.quotes)) throw Error('Each paragraph needs text, citations and quotes.');
+      const ids = [...new Set(p.citations)];
+      for (const id of ids) if (!sources.has(id)) throw Error('Unknown citation source ID.');
+      for (const q of p.quotes) {
+        if (!q || !nonempty(q.text) || !ids.includes(q.source_id)) throw Error('Each declared quote must cite a source used by its paragraph.');
+        if (!sources.get(q.source_id).text.includes(q.text) || !p.text.includes(q.text)) throw Error('Declared quotation does not exactly match both source and answer.');
+      }
+      const citations = ids.map(id => {
+        const s = sources.get(id);
+        return '(' + s.filename + (s.page === null ? '' : ', page ' + s.page) + ')';
+      });
+      return p.text + (citations.length ? ' ' + citations.join(' ') : '');
+    }).join('\n\n');
+    return JSON.stringify({result: {answer, scope: 'Citation records and declared quotations only; meaning, source authenticity and undeclared quotations are not validated.'}});
+  } catch (e) {
+    return JSON.stringify({error: e.message});
+  }
+};
+</script></body></html>
