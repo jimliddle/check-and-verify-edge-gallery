@@ -26,7 +26,15 @@ If a material gap could be resolved with tools, make at most one focused follow-
 
 ## 3. Check document citations in code
 
-When citing documents and run_js is available, call it once with script name `index.html`. Pass `data` as a JSON string containing:
+When citing documents and run_js is available, call it once with these exact parameters:
+
+- `skillName`: `check-and-verify`
+- `scriptName`: `index.html`
+- `data`: a JSON string with the sources and paragraphs described below.
+
+The skill name and script name are different parameters. Never pass `index.html` as the skill name, and never pass a combined path as either parameter.
+
+Pass `data` as a JSON string containing:
 
 - `sources`: array of objects `{id, filename, page, text}`. Assign short IDs such as S1. Copy filename, page and supporting text verbatim from each actual tool result. Page must be a positive integer, or null for a source with no page. Never invent a page. Include only sources needed by this answer.
 - `paragraphs`: array of objects `{text, citations, quotes}`. `text` is a final answer paragraph with no manually written citations or internal metadata. `citations` is an array of source IDs, or empty for an uncited paragraph. `quotes` is an array of `{source_id, text}` for every direct quotation in that paragraph; use an empty array if none. Include uncertainty as a paragraph when needed.
