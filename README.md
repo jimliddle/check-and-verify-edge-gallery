@@ -8,7 +8,7 @@ No new APK or API key is needed for the skill itself. Any search or document too
 
 ## What it does
 
-The model prepares an answer, checks it once, then returns the corrected version. It looks for unsupported claims, missing parts of the question, contradictory evidence and calculation errors. If more evidence would help, it can make one further search and read a fuller passage.
+The skill first runs a small execution check. If that succeeds, the model prepares an answer, checks it once, then returns the corrected version. If execution or citation checking fails, the instructions tell the model to report the failure rather than present the draft as checked. It looks for unsupported claims, missing parts of the question, contradictory evidence and calculation errors. If more evidence would help, it can make one further search and read a fuller passage.
 
 For document answers, a small JavaScript checker checks citation records and quotations, then adds the filenames and page numbers to the answer. It runs locally and makes no network requests.
 
@@ -29,6 +29,20 @@ Check that [SKILL.md](https://jimliddle.github.io/check-and-verify-edge-gallery/
 In Edge Gallery, open **Agent Skills → Skills → + → Load skill from URL**, enter the URL above and enable the skill.
 
 You can also copy the `check-and-verify` folder onto your phone and select it through **Import local skill**. Copy the whole folder, including `scripts/index.html`.
+
+## Update and check execution
+
+Remove the old **check-and-verify** entry from Edge Gallery, then import the same URL above and enable it. This refreshes the stored instructions. Leave Pocket Docs and its MCP configuration in place.
+
+The current instructions show **Revision: 0.2.0**. In a new conversation, send:
+
+```text
+Use Check and Verify. Run only its execution check and return the readiness marker. Do not search documents or prepare an answer.
+```
+
+A successful call returns `CHECK_AND_VERIFY_READY_0.2.0`. The check formats a known citation and rejects an unknown citation and an altered quotation. It tests whether the checker runs; it does not establish that a future answer is correct.
+
+If Edge Gallery still shows “Failed to call skill index.html”, the failure occurs before the script runs. In the inspected Edge Gallery source, that message uses the script filename even though the failed lookup is for the skill name. The revised instructions put a complete call with both names first. We have tested that call against the package, but cannot guarantee that Gemma will emit it correctly on the phone.
 
 ## Examples
 
@@ -89,9 +103,16 @@ Run the tests with Node.js 20 or later:
 node --test tests/checker.test.cjs
 ```
 
-The 13 automated tests run the JavaScript embedded in the skill's HTML file. They cover citation formatting, invalid inputs, quotation mismatches and error handling. They do not run Gemma or Android WebView.
+The 18 automated tests run the JavaScript embedded in the skill's HTML file. They cover citation formatting, invalid inputs, quotation mismatches, the documented execution check, and Edge Gallery’s error-response branch order. They do not run Gemma or Android WebView.
 
 Phone testing is still needed. Keep the model, system prompt and context settings fixed when comparing answers with and without the skill. Include questions with clear answers, missing information, conflicting evidence and calculations. Check citations against the actual tool results.
+
+## Changes in 0.2.0
+
+- Put a complete `run_js` argument example before the review instructions and shorten the review.
+- Add an execution check with a version marker, so it can be tested without document retrieval.
+- Return both an empty result and an error on failure. Edge Gallery checks for a result field before checking the error; the previous error-only response could be reported as a successful call.
+- Stop after a failed check instead of silently continuing with an unchecked answer.
 
 ## Files
 

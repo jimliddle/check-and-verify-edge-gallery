@@ -2,8 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><title>Check and Verify</title></head><body>
 <script>
 'use strict';
-window.ai_edge_gallery_get_result = async function(data) {
-  try {
+function check(data) {
     if (typeof data !== 'string' || data.length > 60000) throw Error('Input must be a JSON string of at most 60000 characters.');
     const input = JSON.parse(data);
     if (!input || !Array.isArray(input.sources) || !Array.isArray(input.paragraphs)) throw Error('sources and paragraphs arrays are required.');
@@ -30,9 +29,37 @@ window.ai_edge_gallery_get_result = async function(data) {
       });
       return p.text + (citations.length ? ' ' + citations.join(' ') : '');
     }).join('\n\n');
-    return JSON.stringify({result: JSON.stringify({answer, scope: 'Citation records and declared quotations only; meaning, source authenticity and undeclared quotations are not validated.'})});
+    return {answer, scope: 'Citation records and declared quotations only; meaning, source authenticity and undeclared quotations are not validated.'};
+}
+function selfTest() {
+  const valid = {sources:[{id:'S1',filename:'Example.pdf',page:2,text:'Returns are accepted within 30 days.'}],
+    paragraphs:[{text:'Returns are accepted within 30 days.',citations:['S1'],quotes:[{source_id:'S1',text:'Returns are accepted within 30 days.'}]}]};
+  if (check(JSON.stringify(valid)).answer !== 'Returns are accepted within 30 days. (Example.pdf, page 2)')
+    throw Error('Self-test failed: exact citation.');
+  valid.paragraphs[0].citations = ['S2'];
+  let rejected = false;
+  try { check(JSON.stringify(valid)); } catch (_) { rejected = true; }
+  if (!rejected) throw Error('Self-test failed: unknown citation was accepted.');
+  valid.paragraphs[0].citations = ['S1'];
+  valid.paragraphs[0].quotes[0].text = 'Returns are accepted within 90 days.';
+  rejected = false;
+  try { check(JSON.stringify(valid)); } catch (_) { rejected = true; }
+  if (!rejected) throw Error('Self-test failed: altered quotation was accepted.');
+  return {ready:'CHECK_AND_VERIFY_READY_0.2.0', checks:['exact citation','unknown citation rejected','altered quotation rejected']};
+}
+window.ai_edge_gallery_get_result = async function(data) {
+  try {
+    if (typeof data !== 'string' || data.length > 60000) throw Error('Input must be a JSON string of at most 60000 characters.');
+    const input = JSON.parse(data);
+    if (input && Object.prototype.hasOwnProperty.call(input, 'mode')) {
+      if (input.mode !== 'self_test' || Object.keys(input).length !== 1) throw Error('Use only mode: self_test for the execution check.');
+      return JSON.stringify({result: JSON.stringify(selfTest())});
+    }
+    return JSON.stringify({result: JSON.stringify(check(data))});
   } catch (e) {
-    return JSON.stringify({error: e.message});
+    // Edge Gallery checks for a result/image/webview before it checks error.
+    // An empty result keeps this in its explicit failed-status branch.
+    return JSON.stringify({result:'', error: e.message});
   }
 };
 </script></body></html>
